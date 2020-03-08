@@ -16,7 +16,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class Router {
+  /// Creates a router instance.
+  ///
+  /// If you provide a [BuildContext] value, that context will be used
+  /// for routing operations. Keep in mind that if you're using multiple
+  /// [Navigator] instances then this "shared" context will be used as the
+  /// basis for determining the "closest" matching [Navigator] instance. If you
+  /// wish to use a different context, you can provide one when you go to perform
+  /// an operation on the router.
+  Router({BuildContext context}) : _sharedContext = context;
+
   static final appRouter = Router();
+
+  final BuildContext _sharedContext;
 
   /// The tree structure that stores the defined routes
   final RouteTree _routeTree = RouteTree();
@@ -41,13 +53,16 @@ class Router {
   void pop(BuildContext context) => Navigator.pop(context);
 
   ///
-  Future navigateTo(BuildContext context, String path,
-      {bool replace = false,
+  Future navigateTo(String path,
+      {BuildContext context,
+      bool replace = false,
       bool clearStack = false,
       TransitionType transition,
       Duration transitionDuration = const Duration(milliseconds: 250),
       RouteTransitionsBuilder transitionBuilder}) {
-    RouteMatch routeMatch = matchRoute(context, path,
+    BuildContext useContext = context ?? _sharedContext;
+    RouteMatch routeMatch = matchRoute(path,
+        context: useContext,
         transitionType: transition,
         transitionsBuilder: transitionBuilder,
         transitionDuration: transitionDuration);
@@ -58,16 +73,16 @@ class Router {
       completer.complete("Non visual route type.");
     } else {
       if (route == null && notFoundHandler != null) {
-        route = _notFoundRoute(context, path);
+        route = _notFoundRoute(useContext, path);
       }
       if (route != null) {
         if (clearStack) {
           future =
-              Navigator.pushAndRemoveUntil(context, route, (check) => false);
+              Navigator.pushAndRemoveUntil(useContext, route, (check) => false);
         } else {
           future = replace
-              ? Navigator.pushReplacement(context, route)
-              : Navigator.push(context, route);
+              ? Navigator.pushReplacement(useContext, route)
+              : Navigator.push(useContext, route);
         }
         completer.complete();
       } else {
@@ -76,7 +91,6 @@ class Router {
         completer.completeError(RouteNotFoundException(error, path));
       }
     }
-
     return future;
   }
 
@@ -94,11 +108,13 @@ class Router {
   }
 
   ///
-  RouteMatch matchRoute(BuildContext buildContext, String path,
-      {RouteSettings routeSettings,
+  RouteMatch matchRoute(String path,
+      {BuildContext context,
+      RouteSettings routeSettings,
       TransitionType transitionType,
       Duration transitionDuration = const Duration(milliseconds: 250),
       RouteTransitionsBuilder transitionsBuilder}) {
+    BuildContext useContext = context ?? _sharedContext;
     RouteSettings settingsToUse = routeSettings;
     if (routeSettings == null) {
       settingsToUse = RouteSettings(name: path);
@@ -118,16 +134,15 @@ class Router {
     Map<String, List<String>> parameters =
         match?.parameters ?? <String, List<String>>{};
     if (handler.type == HandlerType.function) {
-      handler.handlerFunc(buildContext, parameters);
+      handler.handlerFunc(useContext, parameters);
       return RouteMatch(matchType: RouteMatchType.nonVisual);
     }
-
     RouteCreator creator =
         (RouteSettings routeSettings, Map<String, List<String>> parameters) {
       bool isNativeTransition = (transition == TransitionType.native ||
           transition == TransitionType.nativeModal);
       if (isNativeTransition) {
-        if (Theme.of(buildContext).platform == TargetPlatform.iOS) {
+        if (Theme.of(useContext).platform == TargetPlatform.iOS) {
           return CupertinoPageRoute<dynamic>(
               settings: routeSettings,
               fullscreenDialog: transition == TransitionType.nativeModal,
@@ -220,11 +235,11 @@ class Router {
   /// property as callback to create routes that can be used with the [Navigator] class.
   Route<dynamic> generator(RouteSettings routeSettings) {
     RouteMatch match =
-        matchRoute(null, routeSettings.name, routeSettings: routeSettings);
+        matchRoute(routeSettings.name, routeSettings: routeSettings);
     return match.route;
   }
 
-  /// Prints the route tree so you can analyze it.
+  /// Prints the route tree so that you can analyze it.
   void printTree() {
     _routeTree.printTree();
   }

@@ -1,4 +1,6 @@
 # 1.6.0
+- **BREAKING**: you must now provide context to `navigateTo` and `matchRoute` as a named parameter.
+- Adds `BuildContext` to the default constructor as an optional parameter. Useful when using `Provider`. See comments for details.
 - Flutter `>= 1.13.0` is required due to Flutter compatibility issues
 - Dart `>= 2.6.0` is required
 

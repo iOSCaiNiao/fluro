@@ -232,10 +232,11 @@ class HomeComponentState extends State<HomeComponent> {
       }
 
       Application.router
-          .navigateTo(context, route, transition: transitionType)
+          .navigateTo(route, transition: transitionType, context: context)
           .then((result) {
         if (key == "pop-result") {
-          Application.router.navigateTo(context, "/demo/func?message=$result");
+          Application.router
+              .navigateTo("/demo/func?message=$result", context: context);
         }
       });
     } else if (key == "custom") {
@@ -253,18 +254,23 @@ class HomeComponentState extends State<HomeComponent> {
         );
       };
       Application.router.navigateTo(
-        context,
         "/demo?message=$message&color_hex=$hexCode",
+        context: context,
         transition: TransitionType.custom,
         transitionBuilder: transition,
         transitionDuration: const Duration(milliseconds: 600),
       );
     } else if (key == "fixed-trans") {
       Application.router.navigateTo(
-          context, "/demo/fixedtrans?message=Hello!&color_hex=#f4424b");
+        "/demo/fixedtrans?message=Hello!&color_hex=#f4424b",
+        context: context,
+      );
     } else {
       message = "You tapped the function button!";
-      Application.router.navigateTo(context, "/demo/func?message=$message");
+      Application.router.navigateTo(
+        "/demo/func?message=$message",
+        context: context,
+      );
     }
   }
 }
